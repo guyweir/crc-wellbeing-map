@@ -39,11 +39,12 @@ LADbounds <- geojson_sp("https://opendata.arcgis.com/datasets/604fc1fbe022460eaa
 LADbounds <- merge(LADbounds, wb.data,by.x = "lad18cd", by.y = "admin.geography", all.y = T)
 
 #' colour pallete
-factpal1 <- colorQuantile("BuPu",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5)
-factpal2 <- colorQuantile("BuPu",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5)
-factpal3 <- colorQuantile("BuPu",domain = LADbounds$`Happiness_Average (mean)`,n = 5)
-factpal4 <- colorQuantile("BuPu",domain = LADbounds$`Anxiety_Average (mean)`,n = 5 )
+factpal1 <- colorQuantile("Greens",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5)
+factpal2 <- colorQuantile("Greens",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5)
+factpal3 <- colorQuantile("Greens",domain = LADbounds$`Happiness_Average (mean)`,n = 5)
+factpal4 <- colorQuantile("Greens",domain = LADbounds$`Anxiety_Average (mean)`,n = 5 )
 
+factpalLEG <- colorFactor("Greens", domain = 1:5)
 
 #' hover labels
 labels1 <- sprintf("<strong>%s</strong><br/>%s Life satisfaction<sup></sup>",
@@ -69,10 +70,9 @@ labels4 <- sprintf("<strong>%s</strong><br/>%s Anxiety<sup></sup>",
 
 
 #map element
-m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% setView(-3.5,53.2, 5.5) %>% 
+m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% setView(-3.5,55.2, 5.4) %>% 
   setMapWidgetStyle(list(background = "white")) %>% addProviderTiles(providers$CartoDB.Positron, providerTileOptions(opacity = 1) ) %>% 
-  addMapPane(name = "toplayer", zIndex = 420) %>% #layer orders to make sure LSOA markers render on top.
-  addMapPane(name = "nottoplayer", zIndex = 410) %>% 
+
   #LS
   addPolygons(fillColor = ~factpal1(LADbounds$`Life Satisfaction_Average (mean)`),
               stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Life Satisfaction") %>% 
@@ -82,7 +82,7 @@ m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% se
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              options = leafletOptions(pane = "nottoplayer", group = "Life Satisfaction")) %>%
+              group = "Life Satisfaction") %>%
   #Worthwhile
   addPolygons(fillColor = ~factpal2(LADbounds$`Worthwhile_Average (mean)`),
               stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Worthwhile") %>% 
@@ -92,37 +92,46 @@ m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% se
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              options = leafletOptions(pane = "nottoplayer", group = "Worthwhile")) %>%
+               group = "Worthwhile") %>%
   #Happiness
   addPolygons(fillColor = ~factpal3(LADbounds$`Happiness_Average (mean)`),
-              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Wellbeing") %>% 
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Happiness") %>% 
   
   addPolygons(label = labels3, fillOpacity = 0, opacity = 0,
               labelOptions = labelOptions(
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              options = leafletOptions(pane = "nottoplayer", group = "Wellbeing")) %>%
+              group = "Happiness") %>%
   
   #Anxiety
   addPolygons(fillColor = ~factpal4(LADbounds$`Anxiety_Average (mean)`),
-              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Wellbeing") %>% 
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Anxiety") %>% 
   
   addPolygons(label = labels4, fillOpacity = 0, opacity = 0,
               labelOptions = labelOptions(
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              options = leafletOptions(pane = "nottoplayer", group = "Wellbeing")) %>%
+              group = "Anxity") %>%
+  #add legends
+  
+  
+  # addLegend(pal = factpal3, values = LADbounds$`Happiness_Average (mean)`,group = "Happiness",
+  #           labels = c(1:5),
+  #           position = "bottomright", title = "Quintiles", ) %>% 
+
+addLegend(colors = c("#EDF8E9", "#BAE4B3", "#74C476", "#31A354", "#006D2C"), 
+          labels = c(1:5),
+          position = "bottomright", 
+          title = "Quintiles") %>% 
   
   addLayersControl(
     baseGroups = c("Life Satisfaction", "Worthwhile", "Happiness", "Anxiety"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>% 
   
-  addLegend(pal = factpal1, values = LADbounds$`Life Satisfaction_Average (mean)`,
-            labels = levels(LADbounds$`Life Satisfaction_Average (mean)`),
-            position = "bottomright", title = "Quintiles") %>% 
+  hideGroup(c("Worthwhile", "Happiness", "Anxiety")) %>% 
   removeDrawToolbar(clearFeatures = T) %>% 
   addResetMapButton() 
 m2
@@ -134,14 +143,13 @@ m2
 library(htmltools)
 
 #page element title
-title <- tags$div(HTML("Gross Value Added (GVA) by Local Authority and most deprived neighbourhoods,<br> 2018, England and Wales</br>"), 
+title <- tags$div(HTML("Wellbeing measures by Local Authority,<br> April 2019 to March 2020, Great Britain</br>"), 
                   style = "font-family: Open Sans;color: #2A2A2A;font-weight: bold; font-size: 22px; text-align: center"
 )
 
 #page element data sources
-sources <- tags$div(HTML("Sources: Regional gross value added (balanced) by industry: local authorities by NUTS1 region,ONS; <br> Indices of Multiple Deprivation, MHCLG; Welsh Index of Multiple Deprivation 2019<br> 
-                        Analysis: WPI Economics on behalf of CRC <br>
-                         Note: Deprivation ranks are relative to England and Wales separately"), 
+sources <- tags$div(HTML("Sources: Annual personal well-being estimates, ONS<br> 
+                        Analysis: WPI Economics on behalf of CRC"), 
                     style = "font-family: Open Sans;color: #2A2A2A;font-style: italic; font-size: 12px; text-align: left"
 )
 
