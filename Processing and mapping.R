@@ -17,8 +17,10 @@ wb.data <- pivot_wider(wb.data,id_cols = c(`admin.geography`,`geography`), names
 
 wb.data <- wb.data %>% select(admin.geography,geography, contains("average"))
 
-
-
+#perth and kinross S12000024 on wb.data, S12000048	on boundary data
+#fife S12000015 to S12000047
+wb.data$admin.geography[wb.data$admin.geography == "S12000024"] <- "S12000048"
+wb.data$admin.geography[wb.data$admin.geography == "S12000015"] <- "S12000047"
 #### MAPS!!! #####
 
 suppressPackageStartupMessages(library(sp))
@@ -30,41 +32,40 @@ suppressPackageStartupMessages(library(leaflet))
 suppressPackageStartupMessages(library(leaflet.extras))
 
 #' go fetch boundary files and centriods to merge in
-LADbounds <- geojson_sf("https://opendata.arcgis.com/datasets/0e07a8196454415eab18c40a54dfbbef_0.geojson")
-LSOAcentroids <- geojson_sf("https://opendata.arcgis.com/datasets/b7c49538f0464f748dd7137247bbc41c_0.geojson")
-
+#LADbounds <- geojson_sp("https://opendata.arcgis.com/datasets/3a4fa2ce68f642e399b4de07643eeed3_0.geojson") #ultra gen 2019 LAD boundaries
+LADbounds <- geojson_sp("https://opendata.arcgis.com/datasets/604fc1fbe022460eaac4758c7521c3e7_0.geojson") # ultra gen 2018
+#LADbounds2 <- geojson_sf("https://opendata.arcgis.com/datasets/54b65ffb42c2480b88a20899aff750de_0.geojson")
 #' merge data in
-LADbounds <- merge(LADbounds, allgva,by.x = "lad19cd", by.y = "LAD code", all.y = T)
-
-LSOAcentroids <- merge(LSOAcentroids, IMD19all, by.x = "lsoa11cd", by.y = "LSOA code (2011)")
-LSOAcentroids <- LSOAcentroids %>% filter(`IMD decile (1 is most deprived)` == 1)  # select just most deprived 10%
+LADbounds <- merge(LADbounds, wb.data,by.x = "lad18cd", by.y = "admin.geography", all.y = T)
 
 #' colour pallete
+factpal1 <- colorQuantile("BuPu",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5)
+factpal2 <- colorQuantile("BuPu",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5)
+factpal3 <- colorQuantile("BuPu",domain = LADbounds$`Happiness_Average (mean)`,n = 5)
+factpal4 <- colorQuantile("BuPu",domain = LADbounds$`Anxiety_Average (mean)`,n = 5 )
 
-
-factpal <- colorFactor("BuPu",domain = as.factor(LADbounds$gvaquins),n = 5 ,ordered = TRUE )
-binpal <- colorQuantile("Blues", LADbounds$`2018`, n = 5)
 
 #' hover labels
-labels <- sprintf("<strong>%s</strong><br/>%s GVA (£ mil)<sup></sup>",
-                  LADbounds$lad19nm,
-                  format(LADbounds$`2018`, big.mark = ",")) %>% 
+labels1 <- sprintf("<strong>%s</strong><br/>%s Life satisfaction<sup></sup>",
+                  LADbounds$lad18nm,
+                  format(LADbounds$`Life Satisfaction_Average (mean)`, big.mark = ",")) %>% 
   lapply(htmltools::HTML)
 
-####function for circles to additional legend####
-addLegendCustom <- function(map, colors, labels, sizes, opacity = 0.7, position){
-  
-  colorAdditions <- paste0(colors, "; border-radius: 50%; width:", sizes, "px; height:",
-                           sizes, "px", "; position: relative; left: ",max(sizes)-(sizes/2)-5,"px")
-  
-  labelAdditions <- paste0("<div style='display: inline-block;height: ", 
-                           sizes,";position:relative; left: ",max(sizes)-(sizes),"px","; bottom: ",
-                           10,"px",";margin-top: 12px;line-height: ", sizes, "px;'>", 
-                           labels, "</div>")
-  
-  return(addLegend(map, colors = colorAdditions, 
-                   labels = labelAdditions, opacity = opacity, position = position))
-}
+labels2 <- sprintf("<strong>%s</strong><br/>%s Worthwhile<sup></sup>",
+                   LADbounds$lad18nm,
+                   format(LADbounds$`Worthwhile_Average (mean)`, big.mark = ",")) %>% 
+  lapply(htmltools::HTML)
+
+labels3 <- sprintf("<strong>%s</strong><br/>%s Happiness<sup></sup>",
+                   LADbounds$lad18nm,
+                   format(LADbounds$`Happiness_Average (mean)`, big.mark = ",")) %>% 
+  lapply(htmltools::HTML)
+
+labels4 <- sprintf("<strong>%s</strong><br/>%s Anxiety<sup></sup>",
+                   LADbounds$lad18nm,
+                   format(LADbounds$`Anxiety_Average (mean)`, big.mark = ",")) %>% 
+  lapply(htmltools::HTML)
+
 
 
 #map element
@@ -72,29 +73,56 @@ m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% se
   setMapWidgetStyle(list(background = "white")) %>% addProviderTiles(providers$CartoDB.Positron, providerTileOptions(opacity = 1) ) %>% 
   addMapPane(name = "toplayer", zIndex = 420) %>% #layer orders to make sure LSOA markers render on top.
   addMapPane(name = "nottoplayer", zIndex = 410) %>% 
+  #LS
+  addPolygons(fillColor = ~factpal1(LADbounds$`Life Satisfaction_Average (mean)`),
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Life Satisfaction") %>% 
   
-  addPolygons(fillColor = ~factpal(LADbounds$gvaquins),
-              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9) %>% 
-  
-  addPolygons(label = labels, fillOpacity = 0, opacity = 0,
+  addPolygons(label = labels1, fillOpacity = 0, opacity = 0,
               labelOptions = labelOptions(
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              options = leafletOptions(pane = "nottoplayer")) %>%
+              options = leafletOptions(pane = "nottoplayer", group = "Life Satisfaction")) %>%
+  #Worthwhile
+  addPolygons(fillColor = ~factpal2(LADbounds$`Worthwhile_Average (mean)`),
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Worthwhile") %>% 
   
-  addCircleMarkers(data = LSOAcentroids, group = "circlegw",
-                   radius = 1.5,
-                   stroke = F,
-                   color = "#00E1BA", opacity = 0.85, fillOpacity = 0.85,
-                   options = leafletOptions(pane = "toplayer")) %>% 
+  addPolygons(label = labels2, fillOpacity = 0, opacity = 0,
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto"),
+              options = leafletOptions(pane = "nottoplayer", group = "Worthwhile")) %>%
+  #Happiness
+  addPolygons(fillColor = ~factpal3(LADbounds$`Happiness_Average (mean)`),
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Wellbeing") %>% 
   
-  addLegendCustom(colors = c("#00E1BA"), 
-                  labels = c("Most deprived 10% n'hood"),
-                  
-                  sizes = c(10), position = "bottomright" ) %>% 
+  addPolygons(label = labels3, fillOpacity = 0, opacity = 0,
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto"),
+              options = leafletOptions(pane = "nottoplayer", group = "Wellbeing")) %>%
   
-  addLegend(pal = factpal, values = LADbounds$gvaquins, labels = levels(LADbounds$gvaquins), position = "bottomright", title = "GVA Quintiles <br>(1 = low)") %>% 
+  #Anxiety
+  addPolygons(fillColor = ~factpal4(LADbounds$`Anxiety_Average (mean)`),
+              stroke = F, smoothFactor = 0.2, fillOpacity = 0.9, group = "Wellbeing") %>% 
+  
+  addPolygons(label = labels4, fillOpacity = 0, opacity = 0,
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto"),
+              options = leafletOptions(pane = "nottoplayer", group = "Wellbeing")) %>%
+  
+  addLayersControl(
+    baseGroups = c("Life Satisfaction", "Worthwhile", "Happiness", "Anxiety"),
+    options = layersControlOptions(collapsed = FALSE)
+  ) %>% 
+  
+  addLegend(pal = factpal1, values = LADbounds$`Life Satisfaction_Average (mean)`,
+            labels = levels(LADbounds$`Life Satisfaction_Average (mean)`),
+            position = "bottomright", title = "Quintiles") %>% 
   removeDrawToolbar(clearFeatures = T) %>% 
   addResetMapButton() 
 m2
