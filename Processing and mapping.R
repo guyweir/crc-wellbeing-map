@@ -39,10 +39,10 @@ LADbounds <- geojson_sp("https://opendata.arcgis.com/datasets/604fc1fbe022460eaa
 LADbounds <- merge(LADbounds, wb.data,by.x = "lad18cd", by.y = "admin.geography", all.y = T)
 
 #' colour pallete
-factpal1 <- colorQuantile("Greens",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5)
-factpal2 <- colorQuantile("Greens",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5)
-factpal3 <- colorQuantile("Greens",domain = LADbounds$`Happiness_Average (mean)`,n = 5)
-factpal4 <- colorQuantile("Greens",domain = LADbounds$`Anxiety_Average (mean)`,n = 5, reverse = T)
+factpal1 <- colorQuantile("Greens",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5, reverse = T)
+factpal2 <- colorQuantile("Greens",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5, reverse = T)
+factpal3 <- colorQuantile("Greens",domain = LADbounds$`Happiness_Average (mean)`,n = 5, reverse = T)
+factpal4 <- colorQuantile("Greens",domain = LADbounds$`Anxiety_Average (mean)`,n = 5)
 
 factpalLEG <- colorFactor("Greens", domain = 1:5)
 
@@ -124,7 +124,7 @@ m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% se
 addLegend(colors = c("#EDF8E9", "#BAE4B3", "#74C476", "#31A354", "#006D2C"), 
           labels = c(1:5),
           position = "bottomright", 
-          title = "Quintiles") %>% 
+          title = "Quintiles (5 = worst)") %>% 
   
   addLayersControl(
     baseGroups = c("Life Satisfaction", "Worthwhile", "Happiness", "Anxiety"),
@@ -148,7 +148,8 @@ title <- tags$div(HTML("Wellbeing measures by Local Authority,<br> April 2019 to
 )
 
 #page element data sources
-sources <- tags$div(HTML("Sources: Annual personal well-being estimates, ONS<br> 
+sources <- tags$div(HTML("Note: Average scores from survey scales self rated for respondants from 0 to 10<br>
+Sources: Annual personal well-being estimates, ONS<br> 
                         Analysis: WPI Economics on behalf of CRC"), 
                     style = "font-family: Open Sans;color: #2A2A2A;font-style: italic; font-size: 12px; text-align: left"
 )
