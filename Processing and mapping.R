@@ -42,7 +42,7 @@ LADbounds <- merge(LADbounds, wb.data,by.x = "lad18cd", by.y = "admin.geography"
 factpal1 <- colorQuantile("Greens",domain = LADbounds$`Life Satisfaction_Average (mean)`,n = 5)
 factpal2 <- colorQuantile("Greens",domain = LADbounds$`Worthwhile_Average (mean)`,n = 5)
 factpal3 <- colorQuantile("Greens",domain = LADbounds$`Happiness_Average (mean)`,n = 5)
-factpal4 <- colorQuantile("Greens",domain = LADbounds$`Anxiety_Average (mean)`,n = 5 )
+factpal4 <- colorQuantile("Greens",domain = LADbounds$`Anxiety_Average (mean)`,n = 5, reverse = T)
 
 factpalLEG <- colorFactor("Greens", domain = 1:5)
 
@@ -113,7 +113,7 @@ m2 <- leaflet(LADbounds, height = "600px", options = list(padding = 100)) %>% se
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"),
-              group = "Anxity") %>%
+              group = "Anxiety") %>%
   #add legends
   
   
